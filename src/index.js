@@ -37,6 +37,8 @@ module.exports = driver({
     attach: function (inputs) {
         this._i2c = inputs['i2c'];
         this._data = 0;
+
+        this._interfaces = [];
     },
 
     getInterface: function (name) {
@@ -46,7 +48,19 @@ module.exports = driver({
 
         var index = OUTPUT_INDEX_MAP[name];
 
-        return new I2cGpioInterface(this, index);
+        var interfaces = this._interfaces;
+
+        if (index in interfaces) {
+            return interfaces[index];
+        }
+
+        var gpioInterface = new I2cGpioInterface(this, index);
+
+        interfaces[index] = gpioInterface;
+
+        this._interfaces = interfaces;
+
+        return gpioInterface;
     },
 
     exports: {
