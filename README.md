@@ -11,7 +11,7 @@ PCF8574 Driver I2C to GPIO device.
 ## Supported Models
 
 - [pcf8574](https://rap.ruff.io/devices/pcf8574)
-- [pcf8574a](https://rap.ruff.io/devices/pcf8574a)
+- pcf8574a
 
 ## Installing
 
