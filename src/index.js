@@ -25,12 +25,19 @@ function I2cGpioInterface(device, index) {
     this._index = index;
 }
 
-I2cGpioInterface.prototype.write = function (value) {
-    this._device.write(this._index, value);
+/**
+ * @param {number} value 0 or 1
+ * @param {Function} [callback]
+ */
+I2cGpioInterface.prototype.write = function (value, callback) {
+    this._device.write(this._index, value, callback);
 };
 
-I2cGpioInterface.prototype.read = function () {
-    return this._device.read(this._index);
+/**
+ * @param {Function} callback
+ */
+I2cGpioInterface.prototype.read = function (callback) {
+    this._device.read(this._index, callback);
 };
 
 module.exports = driver({
@@ -64,25 +71,65 @@ module.exports = driver({
     },
 
     exports: {
-        write: function (index, value) {
-            var data = 0;
+        /**
+         * @param {number} index
+         * @param {number} value 0 or 1
+         * @param {Function} [callback]
+         */
+        write: function (index, value, callback) {
+            var data = this._data;
 
-            if (value === 1) {
-                data = this._data | (1 << index);
+            if (value) {
+                data |= 1 << index;
             } else {
-                data = this._data & ~(1 << index);
+                data &= ~(1 << index);
             }
 
-            if (data !== this._data) {
-                this._i2c.writeByte(-1, data);
-                this._data = data;
+            if (data === this._data) {
+                invokeCallback(callback);
+                return;
             }
 
-            return data;
+            this._data = data;
+            this._i2c.writeByte(-1, data, callback);
         },
-        read: function (index) {
-            var data = this._i2c.readByte();
-            return (data & (1 << index)) >> index;
+        /**
+         * @param {number} index
+         * @param {Function} callback
+         */
+        read: function (index, callback) {
+            assertCallback(callback);
+
+            this._i2c.readByte(function (error, data) {
+                if (error) {
+                    callback(error);
+                    return;
+                }
+
+                callback(undefined, (data & (1 << index)) >> index);
+            });
         }
     }
 });
+
+function assertCallback(callback) {
+    if (typeof callback !== 'function') {
+        throw new TypeError('The `callback` is expected to be a function');
+    }
+}
+
+function invokeCallback(callback, error, value, sync) {
+    if (typeof callback !== 'function') {
+        if (error) {
+            throw error;
+        } else {
+            return;
+        }
+    }
+
+    if (sync) {
+        callback(error, value);
+    } else {
+        setImmediate(callback, error, value);
+    }
+}
