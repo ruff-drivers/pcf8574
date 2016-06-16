@@ -45,27 +45,24 @@ module.exports = driver({
         this._i2c = inputs['i2c'];
         this._data = 0;
 
-        this._interfaces = [];
+        this._interfaceMap = Object.create(null);
     },
 
     getInterface: function (name) {
+        var interfaceMap = this._interfaceMap;
+
+        if (name in interfaceMap) {
+            return interfaceMap[name];
+        }
+
         if (!hasOwnProperty.call(OUTPUT_INDEX_MAP, name)) {
             throw new Error('Invalid interface name "' + name + '"');
         }
 
         var index = OUTPUT_INDEX_MAP[name];
-
-        var interfaces = this._interfaces;
-
-        if (index in interfaces) {
-            return interfaces[index];
-        }
-
         var gpioInterface = new I2cGpioInterface(this, index);
 
-        interfaces[index] = gpioInterface;
-
-        this._interfaces = interfaces;
+        interfaceMap[name] = gpioInterface;
 
         return gpioInterface;
     },
