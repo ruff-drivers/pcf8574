@@ -1,8 +1,5 @@
 {
-    "models": [
-        "pcf8574",
-        "pcf8574a"
-    ],
+    "models": [],
     "inputs": {
         "i2c": {
             "type": "i2c",
